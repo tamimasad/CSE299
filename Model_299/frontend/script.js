@@ -28,8 +28,8 @@ document.addEventListener("DOMContentLoaded", () => {
     sideMenu.classList.toggle("open");
 
     toggleImg.src = sideMenu.classList.contains("open")
-      ? "Asset/sidebar_cl.png"
-      : "Asset/sidebar.png";
+      ? "/Asset/sidebar_cl.png"
+      : "/Asset/sidebar.png";
   });
 
   // Model selector dropdown
@@ -58,3 +58,4 @@ document.addEventListener("DOMContentLoaded", () => {
     modelSelector.classList.remove("open");
   });
 });
+
