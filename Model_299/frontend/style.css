@@ -1,6 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Orbitron:wght@400..900&display=swap');
 
-
 * {
     margin: 0;
     padding: 0;
@@ -18,7 +17,6 @@ body {
 }
 
 /* Sidebar */
-
 .slider {
     background-color: #3D342F;
 }
@@ -31,14 +29,14 @@ body {
     width: 50px;
     height: 50px;
     transition: transform 0.3s ease;
+    cursor: pointer;
 }
 
 .open--button:hover {
     transform: scale(1.2);
 }
 
-/* Side Menu */
-
+/* Side Menu & History Styles */
 .side--menu {
     width: 0;
     flex: 0 0 auto;
@@ -55,8 +53,42 @@ body {
     flex-shrink: 1;
 }
 
-/* Main Conversation Arer */
+.sidebar-title {
+    color: white;
+    font-family: 'Open Sans', sans-serif;
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+}
 
+.chat-list {
+    padding: 15px;
+    color: white;
+    font-family: 'Open Sans', sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+}
+
+.history-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    transition: background 0.2s ease;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.history-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Main Conversation Area */
 .chat {
     display: flex;
     overflow: visible;
@@ -65,20 +97,72 @@ body {
     min-height: 100vh;
 }
 
-/* Tittle */
-
+/* Title */
 .heading {
     color: #2B2B2B;
     font-family: Orbitron;
-    font-size: 50px;
+    font-size: 40px;
     font-weight: 800;
     align-self: center;
     margin: 15px 0 10px 0;
     flex-shrink: 1;
+    text-align: center;
 }
 
-/* Input, Submit, Voice-input */
+/* Chat Messages Area*/
+.chat-area {
+    flex: 1;
+    padding: 20px 40px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+}
 
+.chat-area::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-area::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 10px;
+}
+
+.chat-area::-webkit-scrollbar-thumb {
+    background-color: rgba(60, 60, 60, 0.35);
+    border-radius: 10px;
+    min-height: 45px;
+}
+
+.message {
+    max-width: 75%;
+    padding: 12px 18px;
+    border-radius: 20px;
+    font-family: "Open Sans", sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.user {
+    background: rgba(255, 255, 255, 0.85);
+    color: #3D342F;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+.bot {
+    background: #3D342F;
+    color: #ffffff;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+/* Input, Submit, Voice-input Container */
 .footer {
     display: flex;
     justify-content: center;
@@ -87,8 +171,7 @@ body {
     gap: 10px;
 }
 
-/* Textarer */
-
+/* Textarea */
 .input {
     flex: 1 1 200px;
     background: rgba(255, 255, 255, 0.35);
@@ -97,14 +180,14 @@ body {
     max-height: 150px;
     max-width: 760px;
     border-radius: 25px;
-    padding: 0 25px 0 25px;
+    padding: 16px 25px;
     border: rgb(255, 255, 255) solid 1px;
     overflow-y: auto;
     outline: none;
     resize: none;
     line-height: 1.5;
+    font-family: 'Open Sans', sans-serif;
 }
-
 
 .input::-webkit-scrollbar {
     width: 8px;
@@ -133,25 +216,10 @@ body {
     color: #5c4d45;
 }
 
-/* Submit button */
-
-.submit--button {
-    text-decoration: none;
-    margin: 0 20px 10px 0;
-    width: 55px;
-    height: 56px;
-    border: none;
-    border-radius: 50px;
-    background: rgba(255, 255, 255, 0.35);
-    border: rgb(255, 255, 255) solid 1px;
-    transition: transform 0.3s ease;
-}
-
-/* Voice input button */
-
+/* Submit & Voice Buttons */
+.submit--button,
 .voice--button {
     text-decoration: none;
-    position: relative;
     margin: 0 0 10px 0;
     width: 55px;
     height: 56px;
@@ -159,7 +227,19 @@ body {
     border-radius: 50px;
     background: rgba(255, 255, 255, 0.35);
     border: rgb(255, 255, 255) solid 1px;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.submit--button {
+    margin-right: 20px;
+}
+
+.voice--button {
+    position: relative;
 }
 
 .voice--button::after {
@@ -177,13 +257,12 @@ body {
     opacity: 0;
     white-space: nowrap;
     pointer-events: none;
+    transition: opacity 0.3s ease;
 }
 
 .voice--button:hover::after {
     opacity: 1;
 }
-
-/* Hover effect for submit & voice-input button */
 
 .submit--button:hover,
 .voice--button:hover {
@@ -192,8 +271,30 @@ body {
     border: #3D342F 2px solid;
 }
 
-/* Model selection area*/
+/* Recording State Pulse */
+.recording {
+    background: rgba(255, 80, 80, 0.6) !important;
+    animation: pulse 1.5s infinite;
+}
 
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 80, 80, 0.7);
+    }
+
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(255, 80, 80, 0);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 80, 80, 0);
+    }
+}
+
+/* Model selection area */
 .model--option {
     position: relative;
     display: flex;
@@ -207,8 +308,6 @@ body {
     font-family: Orbitron;
 }
 
-/* Model select button*/
-
 .model-selector__button {
     text-decoration: none;
     border: none;
@@ -216,13 +315,12 @@ body {
     align-items: center;
     background: transparent;
     color: #1f1e1e;
-    padding: 5px 7px 5px 7px;
+    padding: 5px 7px;
     border-radius: 20px;
     font-weight: 1000;
     font-size: 20px;
     cursor: pointer;
-    backdrop-filter: blur(0);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .model-selector__button:hover {
@@ -238,14 +336,11 @@ body {
     transform: rotate(180deg);
 }
 
-/* Model selection dropdown */
-
 .model-selector__dropdown {
     position: absolute;
     top: calc(100% + 8px);
     left: 0;
     right: 0;
-    z-index: 10;
     width: 185px;
     background: #ac8e65;
     border-radius: 20px;
@@ -265,19 +360,16 @@ body {
     transform: translateY(0);
 }
 
-
-
 .model-selector__dropdown li {
     padding: 10px 12px;
     border-radius: 10px;
     cursor: pointer;
     font-weight: 600;
     color: #3D342F;
+    font-family: 'Open Sans', sans-serif;
     transition: background 0.2s ease;
 }
 
 .model-selector__dropdown li:hover {
     background: rgba(61, 52, 47, 0.15);
 }
-
-/*  */

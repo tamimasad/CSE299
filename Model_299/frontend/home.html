@@ -6,46 +6,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Local to Standard</title>
     <link rel="stylesheet" href="style.css">
-    <script src="script.js"></script>
 </head>
 
 <body>
     <div class="container">
         <div class="slider">
-            <button class="open--button" id="sidebar-toggle"><img id="toggle-img" src="/Asset/sidebar.png" alt=""
-                    srcset=""></button>
+            <button class="open--button" id="sidebar-toggle">
+                <img id="toggle-img" src="/Asset/sidebar.png" alt="Sidebar Toggle">
+            </button>
         </div>
+
         <div id="side--menu" class="side--menu">
-
+            <h3 class="sidebar-title">Chat History</h3>
+            <div id="chatList" class="chat-list"></div>
         </div>
-        <div class="model--option">
-            <div class="model-selector">
-                <button class="model-selector__button" id="modelToggle" type="button">
-                    <span id="activeModel">Standard Bangla</span>
-                    <svg class="chevron" width="16" height="16" viewBox="0 0 24 24">
-                        <path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" />
-                    </svg>
-                </button>
 
-                <ul class="model-selector__dropdown" id="modelDropdown">
-                    <li data-model="standard">Standard Bangla</li>
-                    <li data-model="local">Local Dialect</li>
-                    <li data-model="formal">Formal / Academic</li>
-                </ul>
-            </div>
-        </div>
-        <form class="chat" action="">
-            <h2 class="chat__message heading">Local Bangla Dialect To Standard Bangla Dialect</h2>
-            <div class="chat__message footer">
-                <textarea class="chat__message input" rows="1"></textarea>
-                <div>
-                    <button class="chat__message voice--button" data-tooltip="Use Voice" type="button"><img
-                            src="/Asset/microphone_24p.png" alt="" srcset=""></button>
+        <div class="chat">
+
+            <div class="model--option">
+                <div class="model-selector">
+                    <button class="model-selector__button" id="modelToggle" type="button">
+                        <span id="activeModel">Standard Bangla</span>
+                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24">
+                            <path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" />
+                        </svg>
+                    </button>
+
+                    <ul class="model-selector__dropdown" id="modelDropdown">
+                        <li data-model="standard">Standard Bangla</li>
+                        <li data-model="local">Local Dialect</li>
+                        <li data-model="formal">Formal / Academic</li>
+                    </ul>
                 </div>
-                <button class="chat__message submit--button" type="button"><img src="/Asset/upload.png"></button>
             </div>
-        </form>
+
+            <h2 class="chat__message heading">Dialect Bengali To Standard Bengali</h2>
+
+            <div class="chat-area" id="chatArea">
+            </div>
+
+            <div class="chat__message footer">
+                <textarea id="userInput" class="chat__message input" rows="1"
+                    placeholder="Type dialect Bangla..."></textarea>
+                <div>
+                    <button id="voiceBtn" class="chat__message voice--button" data-tooltip="Use Voice" type="button">
+                        <img src="/Asset/microphone_24p.png" alt="Mic">
+                    </button>
+                </div>
+                <button id="sendBtn" class="chat__message submit--button" type="button">
+                    <img src="/Asset/upload.png" alt="Send">
+                </button>
+            </div>
+
+        </div>
     </div>
+    <script src="script.js"></script>
 </body>
 
 </html>
