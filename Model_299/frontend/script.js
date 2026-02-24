@@ -1,24 +1,24 @@
 document.addEventListener("DOMContentLoaded", () => {
-  //UI & DESIGN LOGIC
-
+  // --------------------------------------------------------
+  // 1. UI ELEMENTS & DESIGN LOGIC
+  // --------------------------------------------------------
   const userInput = document.getElementById("userInput");
   const sendBtn = document.getElementById("sendBtn");
   const voiceBtn = document.getElementById("voiceBtn");
   const chatArea = document.getElementById("chatArea");
   const chatList = document.getElementById("chatList");
+  const sideMenu = document.getElementById("side--menu");
+  const toggleButton = document.getElementById("sidebar-toggle");
+  const toggleImg = document.getElementById("toggle-img");
 
-  // Auto-resize textarea
+  // Auto-resize textarea as user types
   function autoResize() {
     userInput.style.height = "auto";
     userInput.style.height = userInput.scrollHeight + "px";
   }
   userInput.addEventListener("input", autoResize);
 
-  // Sidebar toggle
-  const toggleButton = document.getElementById("sidebar-toggle");
-  const toggleImg = document.getElementById("toggle-img");
-  const sideMenu = document.getElementById("side--menu");
-
+  // Sidebar toggle logic
   toggleButton.addEventListener("click", () => {
     sideMenu.classList.toggle("open");
     toggleImg.src = sideMenu.classList.contains("open")
@@ -26,12 +26,12 @@ document.addEventListener("DOMContentLoaded", () => {
       : "/Asset/sidebar.png";
   });
 
-  // Model selector dropdown
+  // Model selector dropdown logic
   const modelSelector = document.querySelector(".model-selector");
   const modelToggle = document.getElementById("modelToggle");
   const modelDropdown = document.getElementById("modelDropdown");
   const activeModel = document.getElementById("activeModel");
-  let currentSelectedModel = "standard"; // Track selected model for API
+  let currentSelectedModel = "standard";
 
   modelToggle.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -50,12 +50,13 @@ document.addEventListener("DOMContentLoaded", () => {
     modelSelector.classList.remove("open");
   });
 
-  //CHAT FUNCTIONALITY LOGIC
-
+  // --------------------------------------------------------
+  // 2. CHAT FUNCTIONALITY LOGIC
+  // --------------------------------------------------------
   let currentChat = [];
-  let currentSessionIndex = null; // Tracks if we are adding to an existing session
+  let currentSessionIndex = null;
 
-  // Send Message Trigger
+  // Send Message Triggers
   sendBtn.addEventListener("click", sendMessage);
 
   userInput.addEventListener("keydown", function (e) {
@@ -69,54 +70,55 @@ document.addEventListener("DOMContentLoaded", () => {
     const text = userInput.value.trim();
     if (!text) return;
 
-    // Show user message in UI
+    // 1. Show user message in the main Chat Area
     addMessage(text, "user");
     currentChat.push({ role: "user", content: text });
 
-    // Reset Input
+    // 2. Clear input box
     userInput.value = "";
     userInput.style.height = "auto";
     userInput.focus();
 
-    // Send to backend API
+    // 3. Send to backend API
     try {
       const response = await fetch("http://127.0.0.1:8000/process_text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
-          model: currentSelectedModel, // Pass model choice to backend
+          model: currentSelectedModel,
         }),
       });
 
       const data = await response.json();
 
-      // Show bot response
+      // 4. Show bot response in the main Chat Area
       addMessage(data.response, "bot");
       currentChat.push({ role: "bot", content: data.response });
 
+      // 5. Save to history (Local Storage)
       saveSession();
     } catch (error) {
       addMessage("Network Error: Could not connect to the server.", "bot");
     }
   }
 
-  // Add Message to UI
+  // Helper to add message bubbles to the UI
   function addMessage(text, type) {
     const div = document.createElement("div");
     div.classList.add("message", type);
     div.innerText = text;
     chatArea.appendChild(div);
 
-    // Auto scroll to bottom
+    // Auto-scroll to the latest message
     chatArea.scrollTop = chatArea.scrollHeight;
   }
 
-  // Save Chat Session (LocalStorage)
+  // Save conversation to LocalStorage
   function saveSession() {
     if (currentChat.length === 0) return;
 
-    // Generate title from first message
+    // Use the first user message as the title
     const titleText = currentChat[0].content;
     const title =
       titleText.substring(0, 20) + (titleText.length > 20 ? "..." : "");
@@ -124,34 +126,46 @@ document.addEventListener("DOMContentLoaded", () => {
     let sessions = JSON.parse(localStorage.getItem("sessions")) || [];
 
     if (currentSessionIndex !== null) {
-      // Update existing session
+      // Update the current active session
       sessions[currentSessionIndex].messages = currentChat;
     } else {
-      // Create new session
+      // Create a brand new session
       const session = { title: title, messages: currentChat };
       sessions.push(session);
-      currentSessionIndex = sessions.length - 1; // Mark as active session
+      currentSessionIndex = sessions.length - 1;
     }
 
     localStorage.setItem("sessions", JSON.stringify(sessions));
-    loadSessions();
+    loadSidebar(); // Refresh the sidebar list
   }
 
-  // Load Sessions to Sidebar
-  function loadSessions() {
+  // Render the Sidebar History
+  function loadSidebar() {
     chatList.innerHTML = "";
     let sessions = JSON.parse(localStorage.getItem("sessions")) || [];
 
+    // Add "New Chat" button at the top
+    const newChatBtn = document.createElement("div");
+    newChatBtn.classList.add("history-item");
+    newChatBtn.style.background = "rgba(255, 255, 255, 0.15)";
+    newChatBtn.style.fontWeight = "bold";
+    newChatBtn.innerText = "➕ New Chat";
+    newChatBtn.onclick = startNewChat;
+    chatList.appendChild(newChatBtn);
+
+    // Add existing sessions
     sessions.forEach((session, index) => {
       const div = document.createElement("div");
       div.classList.add("history-item");
+      if (index === currentSessionIndex)
+        div.style.borderLeft = "4px solid #F8E3B4";
       div.innerText = session.title;
       div.onclick = () => loadChat(index);
       chatList.appendChild(div);
     });
   }
 
-  // Load Selected Chat
+  // Load a specific chat from history into the main area
   function loadChat(index) {
     let sessions = JSON.parse(localStorage.getItem("sessions")) || [];
     const session = sessions[index];
@@ -159,30 +173,37 @@ document.addEventListener("DOMContentLoaded", () => {
     currentChat = session.messages;
     currentSessionIndex = index;
 
-    chatArea.innerHTML = "";
+    chatArea.innerHTML = ""; // Clear screen before loading history
 
     session.messages.forEach((msg) => {
       addMessage(msg.content, msg.role);
     });
 
-    // Auto close sidebar on mobile (optional UX)
+    // Close sidebar on small screens after selection
     if (window.innerWidth < 768) {
       sideMenu.classList.remove("open");
       toggleImg.src = "/Asset/sidebar.png";
     }
   }
 
-  //VOICE RECORDING
+  // Start a fresh conversation
+  function startNewChat() {
+    currentChat = [];
+    currentSessionIndex = null;
+    chatArea.innerHTML = "";
+    loadSidebar();
+  }
 
+  // --------------------------------------------------------
+  // 3. VOICE RECORDING LOGIC
+  // --------------------------------------------------------
   let mediaRecorder;
   let audioChunks = [];
   let isRecording = false;
 
   voiceBtn.addEventListener("click", async () => {
-    if (isRecording) return; // Prevent multiple recording instances
+    if (isRecording) return;
     isRecording = true;
-
-    // Add visual recording queue
     voiceBtn.classList.add("recording");
 
     try {
@@ -200,11 +221,8 @@ document.addEventListener("DOMContentLoaded", () => {
         voiceBtn.classList.remove("recording");
 
         const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-
-        // UI feedback
         addMessage("🎙️ Audio message processing...", "user");
 
-        // Send audio to backend
         const formData = new FormData();
         formData.append("file", audioBlob);
         formData.append("model", currentSelectedModel);
@@ -214,35 +232,30 @@ document.addEventListener("DOMContentLoaded", () => {
             method: "POST",
             body: formData,
           });
-
           const data = await response.json();
           addMessage(data.response, "bot");
 
-          // Save placeholder info to history
-          currentChat.push({ role: "user", content: "🎙️ [Voice Audio]" });
+          currentChat.push({ role: "user", content: "🎙️ [Audio Message]" });
           currentChat.push({ role: "bot", content: data.response });
           saveSession();
         } catch (error) {
           addMessage("Error processing audio on the server.", "bot");
         }
 
-        // Close mic tracks to release permissions
         stream.getTracks().forEach((track) => track.stop());
       });
 
-      // Stop recording after 5 seconds
+      // Automatically stop recording after 5 seconds
       setTimeout(() => {
-        if (mediaRecorder.state === "recording") {
-          mediaRecorder.stop();
-        }
+        if (mediaRecorder.state === "recording") mediaRecorder.stop();
       }, 5000);
     } catch (err) {
       isRecording = false;
       voiceBtn.classList.remove("recording");
-      alert("Microphone access denied or unavailable.");
+      alert("Microphone access denied.");
     }
   });
 
-  // Initial Load
-  loadSessions();
+  // Run on page load
+  loadSidebar();
 });

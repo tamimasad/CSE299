@@ -7,7 +7,7 @@
 }
 
 body {
-    height: 100vh;
+    min-height: 100vh;
     background: linear-gradient(135deg, #3D342F 0%, #A68A64 45%, #F8E3B4 100%);
 }
 
@@ -40,7 +40,7 @@ body {
 .side--menu {
     width: 0;
     flex: 0 0 auto;
-    height: 100vh;
+    min-height: 100vh;
     background-color: #3D342F;
     display: flex;
     flex-direction: column;
@@ -372,4 +372,21 @@ body {
 
 .model-selector__dropdown li:hover {
     background: rgba(61, 52, 47, 0.15);
+}
+
+
+/* User Message (Aligns to the Right) */
+.message.user {
+    background-color: #3D342F;
+    color: #F8E3B4;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+/* AI Message (Aligns to the Left) */
+.message.bot {
+    background-color: #F8E3B4;
+    color: #3D342F;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
 }
