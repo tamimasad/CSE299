@@ -1,7 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // --------------------------------------------------------
-  // 1. UI ELEMENTS & DESIGN LOGIC
-  // --------------------------------------------------------
   const userInput = document.getElementById("userInput");
   const sendBtn = document.getElementById("sendBtn");
   const voiceBtn = document.getElementById("voiceBtn");
@@ -9,253 +6,191 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatList = document.getElementById("chatList");
   const sideMenu = document.getElementById("side--menu");
   const toggleButton = document.getElementById("sidebar-toggle");
-  const toggleImg = document.getElementById("toggle-img");
 
-  // Auto-resize textarea as user types
-  function autoResize() {
-    userInput.style.height = "auto";
-    userInput.style.height = userInput.scrollHeight + "px";
-  }
-  userInput.addEventListener("input", autoResize);
-
-  // Sidebar toggle logic
-  toggleButton.addEventListener("click", () => {
-    sideMenu.classList.toggle("open");
-    toggleImg.src = sideMenu.classList.contains("open")
-      ? "/Asset/sidebar_cl.png"
-      : "/Asset/sidebar.png";
-  });
-
-  // Model selector dropdown logic
-  const modelSelector = document.querySelector(".model-selector");
-  const modelToggle = document.getElementById("modelToggle");
-  const modelDropdown = document.getElementById("modelDropdown");
+  // Model selector elements
   const activeModel = document.getElementById("activeModel");
-  let currentSelectedModel = "standard";
+  const modelToggle = document.getElementById("modelToggle");
+  const modelSelectorDiv = document.getElementById("modelSelectorDiv");
+  const modelOptions = document.querySelectorAll("#modelDropdown li");
 
-  modelToggle.addEventListener("click", (e) => {
-    e.stopPropagation();
-    modelSelector.classList.toggle("open");
-  });
-
-  modelDropdown.addEventListener("click", (e) => {
-    if (e.target.tagName === "LI") {
-      activeModel.textContent = e.target.textContent;
-      modelSelector.classList.remove("open");
-      currentSelectedModel = e.target.dataset.model;
-    }
-  });
-
-  document.addEventListener("click", () => {
-    modelSelector.classList.remove("open");
-  });
-
-  // --------------------------------------------------------
-  // 2. CHAT FUNCTIONALITY LOGIC
-  // --------------------------------------------------------
   let currentChat = [];
-  let currentSessionIndex = null;
+  let currentSessionFilename = null;
+  let mediaRecorder;
+  let audioChunks = [];
+  let isRecording = false;
+  let currentSelectedModel = "banglat5"; // Default model
 
-  // Send Message Triggers
-  sendBtn.addEventListener("click", sendMessage);
+  // --- Model Selection Logic ---
+  modelToggle.addEventListener("click", () => {
+    modelSelectorDiv.classList.toggle("open");
+  });
 
-  userInput.addEventListener("keydown", function (e) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+  modelOptions.forEach((option) => {
+    option.addEventListener("click", () => {
+      currentSelectedModel = option.getAttribute("data-model");
+      activeModel.innerText = option.innerText;
+      modelSelectorDiv.classList.remove("open");
+    });
+  });
+
+  // Close dropdown if clicked outside
+  document.addEventListener("click", (e) => {
+    if (!modelSelectorDiv.contains(e.target)) {
+      modelSelectorDiv.classList.remove("open");
     }
   });
 
-  async function sendMessage() {
-    const text = userInput.value.trim();
-    if (!text) return;
-
-    // 1. Show user message in the main Chat Area
-    addMessage(text, "user");
-    currentChat.push({ role: "user", content: text });
-
-    // 2. Clear input box
-    userInput.value = "";
-    userInput.style.height = "auto";
-    userInput.focus();
-
-    // 3. Send to backend API
-    try {
-      const response = await fetch("http://127.0.0.1:8000/process_text", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: text,
-          model: currentSelectedModel,
-        }),
-      });
-
-      const data = await response.json();
-
-      // 4. Show bot response in the main Chat Area
-      addMessage(data.response, "bot");
-      currentChat.push({ role: "bot", content: data.response });
-
-      // 5. Save to history (Local Storage)
-      saveSession();
-    } catch (error) {
-      addMessage("Network Error: Could not connect to the server.", "bot");
-    }
-  }
-
-  // Helper to add message bubbles to the UI
   function addMessage(text, type) {
     const div = document.createElement("div");
     div.classList.add("message", type);
     div.innerText = text;
     chatArea.appendChild(div);
-
-    // Auto-scroll to the latest message
     chatArea.scrollTop = chatArea.scrollHeight;
+    return div;
   }
 
-  // Save conversation to LocalStorage
-  function saveSession() {
-    if (currentChat.length === 0) return;
+  // Core Message Sending
+  async function sendMessage() {
+    const text = userInput.value.trim();
+    if (!text) return;
 
-    // Use the first user message as the title
-    const titleText = currentChat[0].content;
-    const title =
-      titleText.substring(0, 20) + (titleText.length > 20 ? "..." : "");
+    userInput.value = "";
+    userInput.style.height = "auto";
 
-    let sessions = JSON.parse(localStorage.getItem("sessions")) || [];
+    addMessage(text, "user");
+    currentChat.push({ role: "user", content: text });
 
-    if (currentSessionIndex !== null) {
-      // Update the current active session
-      sessions[currentSessionIndex].messages = currentChat;
-    } else {
-      // Create a brand new session
-      const session = { title: title, messages: currentChat };
-      sessions.push(session);
-      currentSessionIndex = sessions.length - 1;
+    // loading placeholder
+    const botLoadingMsg = addMessage("...", "bot");
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/process_text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, model: currentSelectedModel }),
+      });
+      const data = await response.json();
+
+      botLoadingMsg.innerText = data.response;
+      currentChat.push({ role: "bot", content: data.response });
+      await saveSession();
+    } catch (error) {
+      botLoadingMsg.innerText = "Error connecting to server.";
     }
-
-    localStorage.setItem("sessions", JSON.stringify(sessions));
-    loadSidebar(); // Refresh the sidebar list
   }
 
-  // Render the Sidebar History
-  function loadSidebar() {
-    chatList.innerHTML = "";
-    let sessions = JSON.parse(localStorage.getItem("sessions")) || [];
+  // Voice Logic
+  async function toggleRecording() {
+    if (!isRecording) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+          await sendVoiceMessage(audioBlob);
+        };
+        mediaRecorder.start();
+        isRecording = true;
+        voiceBtn.classList.add("recording");
+      } catch (err) {
+        alert("Mic access denied.");
+      }
+    } else {
+      mediaRecorder.stop();
+      isRecording = false;
+      voiceBtn.classList.remove("recording");
+      mediaRecorder.stream.getTracks().forEach((t) => t.stop());
+    }
+  }
 
-    // Add "New Chat" button at the top
-    const newChatBtn = document.createElement("div");
-    newChatBtn.classList.add("history-item");
-    newChatBtn.style.background = "rgba(255, 255, 255, 0.15)";
-    newChatBtn.style.fontWeight = "bold";
-    newChatBtn.innerText = "➕ New Chat";
-    newChatBtn.onclick = startNewChat;
-    chatList.appendChild(newChatBtn);
+  async function sendVoiceMessage(audioBlob) {
+    const userMsgPlaceholder = addMessage("🎙️ Transcribing...", "user");
+    const botLoadingMsg = addMessage("...", "bot");
 
-    // Add existing sessions
-    sessions.forEach((session, index) => {
+    const formData = new FormData();
+    formData.append("audio", audioBlob);
+    formData.append("model", currentSelectedModel);
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/process_voice", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+
+      userMsgPlaceholder.innerText = data.transcribed_text;
+      botLoadingMsg.innerText = data.response;
+
+      currentChat.push({ role: "user", content: data.transcribed_text });
+      currentChat.push({ role: "bot", content: data.response });
+      await saveSession();
+    } catch (error) {
+      userMsgPlaceholder.innerText = "Voice error.";
+      botLoadingMsg.remove();
+    }
+  }
+
+  // JSON File / History Logic
+  async function saveSession() {
+    if (currentChat.length === 0) return;
+    const title = currentChat[0].content.substring(0, 20) + "...";
+    const res = await fetch("http://127.0.0.1:8000/save_session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        messages: currentChat,
+        filename: currentSessionFilename,
+      }),
+    });
+    const data = await res.json();
+    currentSessionFilename = data.filename;
+    loadSessions();
+  }
+
+  async function loadSessions() {
+    const res = await fetch("http://127.0.0.1:8000/get_sessions");
+    const sessions = await res.json();
+    chatList.innerHTML = `<div class="history-item" style="font-weight:bold" id="newChatBtn">➕ Start New Chat</div>`;
+    document.getElementById("newChatBtn").onclick = startNewChat;
+
+    sessions.forEach((s) => {
       const div = document.createElement("div");
-      div.classList.add("history-item");
-      if (index === currentSessionIndex)
-        div.style.borderLeft = "4px solid #F8E3B4";
-      div.innerText = session.title;
-      div.onclick = () => loadChat(index);
+      div.className = "history-item";
+      div.innerText = s.title;
+      div.onclick = () => loadChat(s.filename);
       chatList.appendChild(div);
     });
   }
 
-  // Load a specific chat from history into the main area
-  function loadChat(index) {
-    let sessions = JSON.parse(localStorage.getItem("sessions")) || [];
-    const session = sessions[index];
-
-    currentChat = session.messages;
-    currentSessionIndex = index;
-
-    chatArea.innerHTML = ""; // Clear screen before loading history
-
-    session.messages.forEach((msg) => {
-      addMessage(msg.content, msg.role);
-    });
-
-    // Close sidebar on small screens after selection
-    if (window.innerWidth < 768) {
-      sideMenu.classList.remove("open");
-      toggleImg.src = "/Asset/sidebar.png";
-    }
+  async function loadChat(filename) {
+    const res = await fetch(`http://127.0.0.1:8000/get_session/${filename}`);
+    const data = await res.json();
+    currentChat = data.messages;
+    currentSessionFilename = filename;
+    chatArea.innerHTML = "";
+    data.messages.forEach((m) => addMessage(m.content, m.role));
   }
 
-  // Start a fresh conversation
   function startNewChat() {
     currentChat = [];
-    currentSessionIndex = null;
+    currentSessionFilename = null;
     chatArea.innerHTML = "";
-    loadSidebar();
   }
 
-  // --------------------------------------------------------
-  // 3. VOICE RECORDING LOGIC
-  // --------------------------------------------------------
-  let mediaRecorder;
-  let audioChunks = [];
-  let isRecording = false;
-
-  voiceBtn.addEventListener("click", async () => {
-    if (isRecording) return;
-    isRecording = true;
-    voiceBtn.classList.add("recording");
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.start();
-      audioChunks = [];
-
-      mediaRecorder.addEventListener("dataavailable", (event) => {
-        audioChunks.push(event.data);
-      });
-
-      mediaRecorder.addEventListener("stop", async () => {
-        isRecording = false;
-        voiceBtn.classList.remove("recording");
-
-        const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-        addMessage("🎙️ Audio message processing...", "user");
-
-        const formData = new FormData();
-        formData.append("file", audioBlob);
-        formData.append("model", currentSelectedModel);
-
-        try {
-          const response = await fetch("http://127.0.0.1:8000/process_audio", {
-            method: "POST",
-            body: formData,
-          });
-          const data = await response.json();
-          addMessage(data.response, "bot");
-
-          currentChat.push({ role: "user", content: "🎙️ [Audio Message]" });
-          currentChat.push({ role: "bot", content: data.response });
-          saveSession();
-        } catch (error) {
-          addMessage("Error processing audio on the server.", "bot");
-        }
-
-        stream.getTracks().forEach((track) => track.stop());
-      });
-
-      // Automatically stop recording after 5 seconds
-      setTimeout(() => {
-        if (mediaRecorder.state === "recording") mediaRecorder.stop();
-      }, 5000);
-    } catch (err) {
-      isRecording = false;
-      voiceBtn.classList.remove("recording");
-      alert("Microphone access denied.");
+  sendBtn.onclick = sendMessage;
+  voiceBtn.onclick = toggleRecording;
+  userInput.onkeydown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
     }
-  });
+  };
+  toggleButton.onclick = () => sideMenu.classList.toggle("open");
 
-  // Run on page load
-  loadSidebar();
+  loadSessions();
 });
