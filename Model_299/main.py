@@ -39,7 +39,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # Model names
 t5_model_name = "csebuetnlp/banglat5"
 whisper_model_name = "openai/whisper-small"
-m2m100_model_name = "facebook/m2m100_418M"
+m2m100_model_name = "./fine_tuned_m2m100"
 
 # Global model variables
 t5_tokenizer = t5_model = None
