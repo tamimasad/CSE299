@@ -129,7 +129,7 @@ training_args = Seq2SeqTrainingArguments(
     # Batch & accumulation
     per_device_train_batch_size=BATCH_SIZE,
     per_device_eval_batch_size=BATCH_SIZE,
-    gradient_accumulation_steps=GRADIENT_ACCUM_STEPS,  # IMPROVEMENT 3
+    gradient_accumulation_steps=GRADIENT_ACCUM_STEPS,  
 
     # Optimiser
     learning_rate=5e-5,
