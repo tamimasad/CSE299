@@ -22,7 +22,6 @@ print("Step 1: Extracting Parallel Translation pairs from Vashantor...")
 all_pairs = []
 
 for dialect in DIALECTS:
-    # Handle spelling variants in folder names if necessary
     folder_name = 'Barishal' if dialect == 'Barisal' else dialect
 
     for split in ['Train', 'Validation', 'Test']:
@@ -31,11 +30,7 @@ for dialect in DIALECTS:
             continue
 
         df = pd.read_csv(file_path, encoding='utf-8')
-        # Clean column names because of trailing spaces found in your files
         df.columns = [c.strip().lower() for c in df.columns]
-
-        # Identify standard and dialect columns
-        # Standard is 'bangla_speech', Dialect is '[dialect]_bangla_speech'
         std_col = 'bangla_speech'
         dia_col = next(
             (c for c in df.columns if 'bangla_speech' in c and c != 'bangla_speech'), None)
@@ -43,17 +38,16 @@ for dialect in DIALECTS:
         if std_col in df.columns and dia_col:
             for _, row in df.iterrows():
                 all_pairs.append({
-                    'text': clean_text(row[dia_col]),      # Input: Dialect
-                    # Target: Standard Bengali
+                    'text': clean_text(row[dia_col]),    
                     'standard': clean_text(row[std_col]),
-                    'dialect_label': dialect               # For record keeping
+                    'dialect_label': dialect               
                 })
 
 # Convert to DataFrame
 full_df = pd.DataFrame(all_pairs).dropna()
 full_df = full_df[full_df['text'] != ""]
 
-# Split into Train/Val/Test (80/10/10)
+
 train_df, temp_df = train_test_split(full_df, test_size=0.2, random_state=42)
 val_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=42)
 
